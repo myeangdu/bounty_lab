@@ -47,7 +47,7 @@ test('main reporting handles invalid saved practice and legacy data',()=>{
  storage['bounty-lab-v1']='broken';assert.equal(boot('index',storage).read('reports.length'),1);
 });
 test('all eight mission paths still produce the expected flags in their rooms',()=>{
- const memo=boot('memo');memo.get('note-id').value='1003';memo.read('lookup()');assert(memo.get('note-result').textContent.includes('FLAG{check_the_owner}'));memo.get('role').value='admin';memo.get('admin-check').onclick();assert(memo.get('session-result').textContent.includes('FLAG{never_trust_the_client}'));memo.get('config-check').onclick();assert(memo.get('session-result').textContent.includes('FLAG{debug_left_open}'));
+ const memo=boot('memo');memo.get('request-path').value='/api/notes/1003';memo.read('lookup()');assert(memo.get('note-result').textContent.includes('FLAG{check_the_owner}'));memo.get('session-body').value='{"role":"admin"}';memo.get('session-form').onsubmit({preventDefault(){}});assert(memo.get('session-result').textContent.includes('FLAG{never_trust_the_client}'));memo.get('request-path').value='/debug/config';memo.read('lookup()');assert(memo.get('note-result').textContent.includes('FLAG{debug_left_open}'));
  const api=boot('requests');assert.equal(api.read(`simulateRequest('PATCH','/api/profile','{"displayName":"x","plan":"pro"}').flag`),'FLAG{allowlist_every_field}');assert.equal(api.read(`simulateRequest('GET','/api/files?path=%2e%2e%2fprivate%2fbackup.json','{}').content.flag`),'FLAG{normalize_before_validate}');assert.equal(api.read(`(()=>{const b='{"code":"WELCOME","requestId":"x"}';simulateRequest('POST','/api/coupons/redeem',b);return simulateRequest('POST','/api/coupons/redeem',b).flag})()`),'FLAG{once_means_once}');
  const auth=boot('auth');assert.equal(auth.read(`legacyLogin("admin' -- ",'x').ok`),true);assert.equal(auth.read(`(()=>{const t=issueTicket();recoverAccount('admin',t,'testpass123');return accountLogin('admin','testpass123').ok})()`),true);
 });
@@ -56,7 +56,23 @@ test('normal memo CRUD, search, read-only foreign note and direct URLs work',()=
  a.get('new-note').onclick();a.get('editor-title').value='새 프로젝트';a.get('editor-body').value='회의 기록';a.get('save-note').onsubmit({preventDefault(){}});assert.equal(a.get('note-list').children.length,3);
  a.get('search-notes').value='새 프로젝트';a.get('search-notes').oninput();assert.equal(a.get('note-list').children.length,1);assert.equal(boot('memo',{},'',session).get('note-list').children.length,3);
  const foreign=boot('memo',{},'?note=1003');assert.equal(foreign.get('editor').hidden,false);assert.equal(foreign.get('editor-title').readOnly,true);assert(foreign.get('editor-body').value.includes('FLAG{check_the_owner}'));assert.equal(foreign.get('save-note-button').hidden,true);
- const admin=boot('memo',{},'?page=admin');assert.equal(admin.get('admin-data').textContent,'');const debug=boot('memo',{},'?page=debug');assert(debug.get('debug-data').textContent.includes('FLAG{debug_left_open}'));
+ const admin=boot('memo',{},'?page=admin');assert.equal(admin.get('admin-data').textContent,'');const debug=boot('memo',{},'?page=debug');assert.equal(debug.get('debug-data').textContent,'');
+});
+test('memo flags require typed request path and submitted session JSON',()=>{
+ const memo=boot('memo');
+ assert(!memo.html.includes('id="config-check"'));
+ assert(!memo.html.includes('id="role"'));
+ assert(memo.html.includes('id="hint-config"'));
+ assert.equal(memo.get('session-body').value,'{\n  "role": "user"\n}');
+ memo.get('session-form').onsubmit({preventDefault(){}});
+ assert(memo.get('session-result').textContent.includes('"role": "user"'));
+ assert(!memo.get('session-result').textContent.includes('FLAG{'));
+ memo.get('request-path').value='/api/notes/1001';memo.read('lookup()');assert(!memo.get('note-result').textContent.includes('FLAG{debug_left_open}'));
+ memo.get('request-path').value='/debug/config/';memo.read('lookup()');assert(!memo.get('note-result').textContent.includes('FLAG{'));
+ memo.get('request-path').value='/debug/config';memo.get('request-form').onsubmit({preventDefault(){}});assert(memo.get('note-result').textContent.includes('FLAG{debug_left_open}'));
+ memo.get('session-body').value='{"role":"admin"}';memo.read('openMemoAdmin(false)');assert(!memo.get('admin-data').textContent.includes('FLAG{'));
+ memo.get('session-form').onsubmit({preventDefault(){}});assert(memo.get('admin-data').textContent.includes('FLAG{never_trust_the_client}'));
+ memo.get('session-body').value='{bad';memo.get('session-form').onsubmit({preventDefault(){}});assert(memo.get('session-result').textContent.includes('400 Bad Request'));
 });
 test('account forms update service state and the request console reflects changes',()=>{
  const a=boot('requests');a.get('profile-name').value='새 이름';a.get('profile-save').onsubmit({preventDefault(){}});assert.equal(a.get('account-sidebar-name').textContent,'새 이름');assert.equal(a.get('plan-title').textContent,'Free');a.get('export-data').onclick();assert(!a.get('export-result').textContent.includes('FLAG{'));

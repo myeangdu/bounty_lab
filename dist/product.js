@@ -17,7 +17,7 @@ function openMemo(id, changeUrl=true) {
   $('editor-owner').textContent=note.owner+' · 개인 메모';
   $('editor-meta').textContent=note.date+' · 메모 #'+id;
   const readonly=note.owner!=='지민';$('editor-title').readOnly=readonly;$('editor-body').readOnly=readonly;$('save-note-button').hidden=readonly;
-  $('note-id').value=id;productMessage('');
+  $('request-path').value='/api/notes/'+id;productMessage('');
 }
 function renderMemoList() {
   const query=$('search-notes').value.trim().toLowerCase();
@@ -37,16 +37,11 @@ function renderMemoList() {
 function openMemoAdmin(changeUrl=true) {
   if(changeUrl)routeMemo({page:'admin'});
   $('editor').hidden=true;$('memo-debug').hidden=true;$('memo-admin').hidden=false;
-  const admin=$('role').value==='admin';
+  const admin=memoSessionRole==='admin';
   $('admin-status').textContent=admin?'워크스페이스의 관리자입니다.':'이 페이지에 접근할 권한이 없습니다. 워크스페이스 관리자에게 문의하세요.';
   $('admin-data').textContent=admin?'활성 멤버 12명 · 상태 정상\n감사 로그 인증키\n'+challenges.role.flag:'';
 }
-function openMemoDebug(changeUrl=true) {
-  if(changeUrl)routeMemo({page:'debug'});
-  $('editor').hidden=true;$('memo-admin').hidden=true;$('memo-debug').hidden=false;
-  $('debug-data').textContent=JSON.stringify({service:'memo',version:'0.9.2',environment:'development',debug:true,internal_flag:challenges.config.flag},null,2);
-}
-function readMemoRoute(){const params=new URLSearchParams(location.search);if(params.has('note'))openMemo(params.get('note'),false);else if(params.get('page')==='admin')openMemoAdmin(false);else if(params.get('page')==='debug')openMemoDebug(false);else{$('editor').hidden=true;$('memo-admin').hidden=true;$('memo-debug').hidden=true;}}
+function readMemoRoute(){const params=new URLSearchParams(location.search);if(params.has('note'))openMemo(params.get('note'),false);else if(params.get('page')==='admin')openMemoAdmin(false);else{$('editor').hidden=true;$('memo-admin').hidden=true;$('memo-debug').hidden=true;}}
 if(activeLab.id==='memo') {
   $('search-notes').oninput=renderMemoList;
   $('new-note').onclick=()=>{let id=String(Math.max(1003,...Object.keys(memoNotes).map(Number))+1);memoNotes[id]={owner:'지민',title:'제목 없는 메모',body:'',date:new Date().toLocaleDateString('ko-KR')};renderMemoList();openMemo(id);$('editor-title').focus();};
