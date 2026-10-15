@@ -5,9 +5,10 @@
 .lab-tools #request-path{flex:1;min-width:0;width:100%}
 .lab-tools .request-box form .dark-button{width:auto;margin-top:0;flex:0 0 auto}
 .lab-tools .tool-columns>div:last-child{display:flex;flex-direction:column}
-.lab-tools .session-content form{display:flex;flex-direction:column;align-items:stretch;gap:9px;width:100%}
+.lab-tools .session-content form{display:block;width:100%}
 .lab-tools .session-request-line{display:flex;align-items:center;gap:9px}
-.lab-tools .session-content label{font-size:11px;color:#808a80}
-.lab-tools #session-body{width:100%;min-height:76px;padding:10px;border:1px solid #dce4d7;border-radius:5px;background:#fff;color:#354735;font:12px/1.5 monospace;resize:vertical}
-.lab-tools .session-content form button{align-self:flex-start}
+.lab-tools .session-body-field{margin-top:14px}
+.lab-tools .session-body-field label{display:block;margin-bottom:7px;font-size:11px;color:#808a80}
+.lab-tools #session-body{display:block;width:100%;min-height:96px;padding:11px;border:1px solid #dce4d7;border-radius:5px;background:#fff;color:#354735;font:13px/1.6 monospace;resize:vertical}
+.lab-tools .session-send-row{display:flex;justify-content:flex-end;margin-top:10px}
 .lab-tools .practice-corner-hint{margin:auto 2px 0;padding-top:12px;text-align:right;color:#8b958c;font-size:10px;line-height:1.5}
