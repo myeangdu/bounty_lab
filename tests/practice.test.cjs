@@ -5,7 +5,7 @@ const vm=require('node:vm');
 function boot(page='memo',storage={},search='',session={}) {
   const html=fs.readFileSync('dist/'+page+'.html','utf8');
   const elements=[],ids=new Map(),listeners={},windowListeners={};let now=0,interval;
-  function element(tag='div',attrs={}) {const e={tag,attrs,style:{},dataset:{},hidden:'hidden' in attrs,open:false,value:attrs.value||'',textContent:'',children:[],focus(){},click(){},showModal(){this.open=true},close(){this.open=false},className:attrs.class||'',classList:{toggle(){}},setAttribute(k,v){this.attrs[k]=v},append(...v){this.children.push(...v)},replaceChildren(...v){this.children=v},matches(s){return s===this.tag},addEventListener(t,f){this[t]=f},querySelector(){return this.children[0]||(this.children[0]=element('span'))}};for(const[k,v]of Object.entries(attrs))if(k.startsWith('data-'))e.dataset[k.slice(5).replace(/-([a-z])/g,(_,a)=>a.toUpperCase())]=v;return e;}
+  function element(tag='div',attrs={}) {const e={tag,attrs,style:{},dataset:{},hidden:'hidden' in attrs,open:false,value:attrs.value||'',textContent:'',children:[],focus(){},click(){},scrollIntoView(){this.scrolled=true},showModal(){this.open=true},close(){this.open=false},className:attrs.class||'',classList:{toggle(){}},setAttribute(k,v){this.attrs[k]=v},append(...v){this.children.push(...v)},replaceChildren(...v){this.children=v},matches(s){return s===this.tag},addEventListener(t,f){this[t]=f},querySelector(){return this.children[0]||(this.children[0]=element('span'))}};for(const[k,v]of Object.entries(attrs))if(k.startsWith('data-'))e.dataset[k.slice(5).replace(/-([a-z])/g,(_,a)=>a.toUpperCase())]=v;return e;}
   for(const m of html.matchAll(/<([a-z][\w-]*)\b([^>]*)>/g)){const attrs={};for(const a of m[2].matchAll(/([\w-]+)(?:="([^"]*)")?/g))attrs[a[1]]=a[2]??'';const e=element(m[1],attrs);elements.push(e);if(attrs.id){assert(!ids.has(attrs.id),'duplicate id: '+attrs.id);ids.set(attrs.id,e);}}
   const matches=(e,s)=>{s=s.trim();if(s.startsWith('.'))return e.className.split(' ').includes(s.slice(1));const a=s.match(/^\[([^=\]^]+)(\^?=)?"?([^"\]]*)"?\]$/);if(a)return a[1] in e.attrs&&(!a[2]||(a[2]==='^='?e.attrs[a[1]].startsWith(a[3]):e.attrs[a[1]]===a[3]));return e.tag===s};
   const query=s=>elements.filter(e=>s.split(',').some(q=>matches(e,q)));
@@ -70,8 +70,10 @@ test('memo flags require typed request path and submitted session JSON',()=>{
  memo.get('request-path').value='/api/notes/1001';memo.read('lookup()');assert(!memo.get('note-result').textContent.includes('FLAG{debug_left_open}'));
  memo.get('request-path').value='/debug/config/';memo.read('lookup()');assert(!memo.get('note-result').textContent.includes('FLAG{'));
  memo.get('request-path').value='/debug/config';memo.get('request-form').onsubmit({preventDefault(){}});assert(memo.get('note-result').textContent.includes('FLAG{debug_left_open}'));
+ assert.equal(memo.get('note-result').scrolled,true);
  memo.get('session-body').value='{"role":"admin"}';memo.read('openMemoAdmin(false)');assert(!memo.get('admin-data').textContent.includes('FLAG{'));
  memo.get('session-form').onsubmit({preventDefault(){}});assert(memo.get('admin-data').textContent.includes('FLAG{never_trust_the_client}'));
+ assert.equal(memo.get('session-result').scrolled,true);
  memo.get('session-body').value='{bad';memo.get('session-form').onsubmit({preventDefault(){}});assert(memo.get('session-result').textContent.includes('400 Bad Request'));
 });
 test('account forms update service state and the request console reflects changes',()=>{
