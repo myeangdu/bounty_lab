@@ -13,7 +13,7 @@ function boot(page='memo',storage={},search='',session={}) {
   if(ids.has('advanced-preset'))ids.get('advanced-preset').value='assignment';
   const location={href:'https://example.test/'+page+'.html'+search,search};
   const c=vm.createContext({structuredClone,URL,URLSearchParams,Blob,setTimeout(){},location,history:{pushState(_a,_b,url){location.href=String(url);location.search=new URL(url).search}},sessionStorage:{getItem:k=>session[k]??null,setItem(k,v){session[k]=v}},document,window:{addEventListener(t,f){windowListeners[t]=f},open(){return null}},localStorage:{getItem:k=>storage[k]??null,setItem(k,v){storage[k]=v}},performance:{now:()=>now},setInterval(fn){interval=fn}});
-  for(const m of html.matchAll(/<script src="([^"]+)"/g))vm.runInContext(fs.readFileSync('dist/'+m[1],'utf8'),c,{filename:m[1]});
+  for(const m of html.matchAll(/<script src="([^"]+)"/g))vm.runInContext(fs.readFileSync('dist/'+m[1].split('?')[0],'utf8'),c,{filename:m[1]});
   return{html,get:id=>ids.get(id),query,document,listeners,windowListeners,storage,read:s=>vm.runInContext(s,c),advance(ms){now+=ms},tick(){interval()},mode(value){ids.get('practice-mode').value=value;ids.get('practice-mode').onchange()}};
 }
 test('catalogue and three rooms initialize using only their own actual DOM and scripts',()=>{
