@@ -68,7 +68,7 @@ function update() {
     });
     if (!entries.length) {
       const empty = document.createElement('p'); empty.className = 'empty-history';
-      empty.textContent = activeLab ? '이 실습에서 발견한 플래그를 제보하면 여기에 기록됩니다.' : '실습 환경에서 플래그를 제보하면 여기에 기록됩니다.';
+      empty.textContent = activeLab ? '이 실습에서 발견한 플래그를 제보하면 여기에 기록됩니다.' : '발견한 플래그를 제출하면 여기에 기록됩니다.';
       entries.push(empty);
     }
     history.replaceChildren(...entries);
@@ -78,27 +78,28 @@ function update() {
 function tab(name) {
   if ($('lab-tools') && !$('lab-tools').open) $('lab-tools').showModal();
   for (const value of ['service', 'report']) {
+    if (!$(value + '-panel')) continue;
     $(value + '-panel').hidden = value !== name;
     $(value + '-tab').classList.toggle('active', value === name);
     $(value + '-tab').setAttribute('aria-selected', String(value === name));
   }
 }
 $('service-tab').onclick = () => tab('service');
-$('report-tab').onclick = () => tab('report');
+if ($('report-tab')) $('report-tab').onclick = () => tab('report');
 function showResult(id, text, found = false) {
   $(id).textContent = text; $(id).classList.toggle('found', found);
 }
 function submitReport(type, flag, steps) {
-  if (!activeLab || !isChallengeType(type) || !activeTypes.includes(type)) return {ok: false, message: '현재 실습의 취약점 유형을 선택해 주세요.'};
+  if (activeLab || !isChallengeType(type)) return {ok: false, message: '메인 페이지에서 취약점 유형을 선택해 주세요.'};
   if (typeof flag !== 'string' || flag.trim() !== challenges[type].flag) return {ok: false, message: '플래그와 취약점 유형이 일치하지 않아요.'};
   if (typeof steps !== 'string' || steps.trim().length < 10) return {ok: false, message: '재현 과정을 10자 이상 적어주세요.'};
   loadReports();
   if (reports.some(r => r.type === type)) return {ok: false, message: '이미 보상을 받은 취약점입니다.'};
-  const record = {type, date: new Date().toLocaleDateString('ko-KR'), practice: practiceSnapshot()};
+  const record = {type, date: new Date().toLocaleDateString('ko-KR'), practice: reportPracticeSnapshot(type)};
   reports.push(record);
   let saved = true;
   try { localStorage.setItem(reportPrefix + type, JSON.stringify(record)); } catch { saved = false; }
-  update(); finishPractice();
+  update();
   return {ok: true, message: '제보 승인! ₩' + money(challenges[type].reward) + ' 지급. ' + challenges[type].lesson + (saved ? '' : ' 저장할 수 없어 다른 창에 반영되지 않으며 새로고침 시 기록이 사라질 수 있습니다.')};
 }
 if ($('report-form')) $('report-form').onsubmit = e => {
@@ -125,7 +126,7 @@ window.addEventListener('storage', e => {
 });
 window.addEventListener('focus', syncReports);
 loadReports(); update();
-if (activeLab && document.modelContext?.registerTool) {
+if (!activeLab && document.modelContext?.registerTool) {
   try {
     Promise.resolve(document.modelContext.registerTool({
       name: 'submit_vulnerability_report', title: '취약점 제보 제출',
@@ -135,4 +136,16 @@ if (activeLab && document.modelContext?.registerTool) {
       execute(input) { const result = submitReport(input?.type, input?.flag, input?.steps); tab('report'); $('report-feedback').textContent = result.message; return result; }
     })).catch(() => {});
   } catch {}
+}
+
+function reportPracticeSnapshot(type) {
+  const lab = labs.find(lab => lab.keys.includes(type));
+  try {
+    const saved = JSON.parse(localStorage.getItem('bounty-lab-practice-v2:' + lab.id));
+    if (saved && ['learning','challenge'].includes(saved.mode) && Number.isSafeInteger(saved.elapsedMs) && saved.elapsedMs >= 0 && Array.isArray(saved.hints)) {
+      const keys = lab.keys.flatMap(t => Array.from({length:['config','idor','role'].includes(t)?1:3}, (_,i)=>t+':'+(i+1)));
+      return {lab:lab.id,mode:saved.mode,elapsedMs:saved.elapsedMs,hints:new Set(saved.hints.filter(k=>keys.includes(k))).size};
+    }
+  } catch {}
+  return null;
 }

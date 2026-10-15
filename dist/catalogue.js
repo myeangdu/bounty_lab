@@ -10,3 +10,14 @@ function renderCatalogue() {
   }
 }
 renderCatalogue();
+
+function openReportRoute() {
+  if (location.hash === '#report' || new URLSearchParams(location.search).has('report')) {
+    tab('report');
+    const id = new URLSearchParams(location.search).get('report');
+    const lab = labs.find(lab => lab.id === id);
+    if (lab) $('report-type').value = lab.keys.find(type => !reports.some(r => r.type === type)) || lab.keys[0];
+  }
+}
+window.addEventListener('hashchange', openReportRoute);
+openReportRoute();

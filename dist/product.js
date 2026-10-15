@@ -103,3 +103,5 @@ if(activeLab.id==='auth') {
   $('logout').onclick=()=>{for(const id of ['sql-pass','reset-pass','sql-result','reset-result','signed-secret']){if('value' in $(id))$(id).value='';$(id).textContent='';}switchAuth(authView);};
   const reset=$('auth-reset').onclick;$('auth-reset').onclick=()=>{reset();$('signed-secret').textContent='';switchAuth('account');};
 }
+
+$('report-link').onclick = () => { tickPractice(); practiceRunning = false; savePractice(); renderPractice(); };

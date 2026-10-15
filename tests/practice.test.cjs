@@ -17,8 +17,8 @@ function boot(page='memo',storage={},search='',session={}) {
   return{html,get:id=>ids.get(id),query,document,listeners,windowListeners,storage,read:s=>vm.runInContext(s,c),advance(ms){now+=ms},tick(){interval()},mode(value){ids.get('practice-mode').value=value;ids.get('practice-mode').onchange()}};
 }
 test('catalogue and three rooms initialize using only their own actual DOM and scripts',()=>{
- const home=boot('index');assert.equal(home.query('[data-launch]').length,3);assert(!home.get('request-form'));assert(!home.get('advanced-form'));assert(!home.get('sql-login'));assert(!home.get('report-form'));
- for(const[name,own,other]of [['memo','request-form','advanced-form'],['requests','advanced-form','sql-login'],['auth','sql-login','request-form']]){const a=boot(name);assert(a.get(own));assert(!a.get(other));assert(a.get('report-form'));assert.equal(a.read('activeLab.id'),name);const launch=home.query('[data-launch="'+name+'"]')[0];assert.equal(launch.attrs.href,name+'.html');assert.equal(launch.attrs.target,'_blank');assert.equal(launch.attrs.rel,'noopener');assert.equal(launch.onclick,undefined);}
+ const home=boot('index');assert.equal(home.query('[data-launch]').length,3);assert(!home.get('request-form'));assert(!home.get('advanced-form'));assert(!home.get('sql-login'));assert(home.get('report-form'));
+ for(const[name,own,other]of [['memo','request-form','advanced-form'],['requests','advanced-form','sql-login'],['auth','sql-login','request-form']]){const a=boot(name);assert(a.get(own));assert(!a.get(other));assert(!a.get('report-form'));assert.equal(a.read('activeLab.id'),name);const launch=home.query('[data-launch="'+name+'"]')[0];assert.equal(launch.attrs.href,name+'.html');assert.equal(launch.attrs.target,'_blank');assert.equal(launch.attrs.rel,'noopener');assert.equal(launch.onclick,undefined);}
 });
 test('all hint families are blocked in challenge mode and counted once in learning mode',()=>{
  const memo=boot('memo');memo.get('hint-config').hidden=true;memo.query('[data-hint]')[0].onclick();assert.equal(memo.read('practice.hints.length'),1);memo.mode('challenge');assert(memo.get('hint-config').hidden);assert(memo.query('[data-hint]')[0].hidden);assert.equal(memo.read("practiceHint('idor:1')"),false);memo.mode('learning');memo.read("practiceHint('config:1')");assert.equal(memo.read('practice.hints.length'),1);
@@ -29,14 +29,22 @@ test('room timers and hint records persist independently and pause in the backgr
  const storage={},a=boot('memo',storage),b=boot('auth',storage);a.get('practice-toggle').onclick();a.advance(65000);a.tick();a.read("practiceHint('config:1')");a.mode('challenge');a.document.hidden=true;a.listeners.visibilitychange();a.advance(90000);a.read('tickPractice()');assert.equal(a.read('practice.elapsedMs'),65000);
  b.get('practice-toggle').onclick();b.advance(12000);b.tick();const restored=boot('memo',storage);assert.equal(restored.get('practice-time').textContent,'01:05');assert.equal(restored.read('practiceRunning'),false);assert.equal(restored.read('practice.mode'),'challenge');assert.equal(restored.read('practice.hints.length'),1);assert.equal(boot('auth',storage).read('practice.elapsedMs'),12000);
 });
-test('reports synchronize across windows without overwriting other rooms and reject duplicates',()=>{
- const storage={},home=boot('index',storage),a=boot('memo',storage),b=boot('auth',storage);a.get('practice-toggle').onclick();a.advance(10000);assert.equal(a.read("submitReport('config',challenges.config.flag,'abcdefghijk').ok"),true);assert.equal(b.read("submitReport('loginSql',challenges.loginSql.flag,'abcdefghijk').ok"),true);
- home.windowListeners.storage({key:'bounty-lab-report-v2:loginSql'});assert.equal(home.read('reports.length'),2);assert.equal(home.get('balance').textContent,'350,000');assert.equal(home.query('[data-room-count="memo"]')[0].textContent,'1 / 3 해결');
- const other=boot('memo',storage);assert.equal(other.read("submitReport('config',challenges.config.flag,'abcdefghijk').ok"),false);assert.equal(other.read("submitReport('loginReset',challenges.loginReset.flag,'abcdefghijk').ok"),false);assert.equal(other.read('reports.find(r=>r.type==="config").practice.lab'),'memo');assert.equal(other.read('reports.find(r=>r.type==="config").practice.elapsedMs'),10000);
- a.read("['idor','role'].forEach(t=>submitReport(t,challenges[t].flag,'abcdefghijk'))");assert.equal(a.read('practiceRunning'),false);assert(a.get('practice-toggle').disabled);assert.equal(a.get('room-progress').textContent,'3 / 3 해결');
+test('main-page reporting saves room statistics and syncs completion back to services',()=>{
+ const storage={},room=boot('memo',storage),home=boot('index',storage);
+ room.get('practice-toggle').onclick();room.advance(10000);room.read("practiceHint('config:1')");room.get('report-link').onclick();
+ assert.equal(room.read("submitReport('config',challenges.config.flag,'abcdefghijk').ok"),false);
+ assert.equal(home.read("submitReport('config',challenges.config.flag,'abcdefghijk').ok"),true);
+ assert.equal(home.read('reports[0].practice.elapsedMs'),10000);assert.equal(home.read('reports[0].practice.hints'),1);
+ assert.equal(home.read("submitReport('config',challenges.config.flag,'abcdefghijk').ok"),false);
+ assert.equal(home.read("submitReport('idor','wrong','abcdefghijk').ok"),false);
+ home.read("['idor','role','loginSql'].forEach(t=>submitReport(t,challenges[t].flag,'abcdefghijk'))");
+ room.windowListeners.storage({key:'bounty-lab-report-v2:role'});assert.equal(room.get('room-progress').textContent,'3 / 3 해결');assert(room.get('practice-toggle').disabled);
+ const routed=boot('index',storage,'?report=auth');assert.equal(routed.get('report-panel').hidden,false);assert.equal(routed.get('report-type').value,'loginReset');
 });
-test('legacy records survive and malformed storage cannot hide valid new reports',()=>{
- const storage={'bounty-lab-v1':JSON.stringify([{type:'config',date:'x'},{type:'toString',date:'x'},{type:['role'],date:'x'}]),'bounty-lab-practice-v2:memo':'{"mode":"challenge","elapsedMs":-1,"hints":[]}'};const a=boot('memo',storage);assert.equal(a.read('reports.length'),1);assert.equal(a.read('practice.mode'),'learning');assert.equal(a.read("submitReport('idor',challenges.idor.flag,'abcdefghijk').ok"),true);storage['bounty-lab-v1']='broken';const b=boot('memo',storage);assert.equal(b.read('reports.length'),1);assert.equal(b.read('reports[0].type'),'idor');
+test('main reporting handles invalid saved practice and legacy data',()=>{
+ const storage={'bounty-lab-v1':JSON.stringify([{type:'config',date:'x'},{type:'toString',date:'x'}]),'bounty-lab-practice-v2:memo':'broken'};
+ const home=boot('index',storage);assert.equal(home.read('reports.length'),1);assert.equal(home.read("submitReport('idor',challenges.idor.flag,'abcdefghijk').ok"),true);assert.equal(home.read('reports[1].practice'),null);
+ storage['bounty-lab-v1']='broken';assert.equal(boot('index',storage).read('reports.length'),1);
 });
 test('all eight mission paths still produce the expected flags in their rooms',()=>{
  const memo=boot('memo');memo.get('note-id').value='1003';memo.read('lookup()');assert(memo.get('note-result').textContent.includes('FLAG{check_the_owner}'));memo.get('role').value='admin';memo.get('admin-check').onclick();assert(memo.get('session-result').textContent.includes('FLAG{never_trust_the_client}'));memo.get('config-check').onclick();assert(memo.get('session-result').textContent.includes('FLAG{debug_left_open}'));
