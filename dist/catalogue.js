@@ -10,15 +10,3 @@ function renderCatalogue() {
   }
 }
 renderCatalogue();
-
-document.querySelectorAll('[data-launch]').forEach(link => {
-  link.addEventListener('click', event => {
-    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
-    const room = window.open(link.href, 'bounty-lab-' + link.dataset.launch, 'popup,width=1280,height=900,resizable=yes,scrollbars=yes');
-    if (room) {
-      room.opener = null;
-      room.focus();
-      event.preventDefault();
-    }
-  });
-});
