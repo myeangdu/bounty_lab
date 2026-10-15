@@ -11,4 +11,10 @@
 .lab-tools .session-body-field label{display:block;margin-bottom:7px;font-size:11px;color:#808a80}
 .lab-tools #session-body{display:block;width:100%;min-height:96px;padding:11px;border:1px solid #dce4d7;border-radius:5px;background:#fff;color:#354735;font:13px/1.6 monospace;resize:vertical}
 .lab-tools .session-send-row{display:flex;justify-content:flex-end;margin-top:10px}
-.lab-tools .practice-corner-hint{margin:auto 2px 0;padding-top:12px;text-align:right;color:#8b958c;font-size:10px;line-height:1.5}
+.product-body[data-lab="memo"] .sidebar-dev-note{margin:0 4px;padding:9px 10px;border-left:2px solid #c8d4c1;background:#f5f8f2;color:#879583;font-size:10px;line-height:1.5}
+.product-body[data-lab="memo"] .sidebar-dev-note>span{font-size:9px;letter-spacing:.5px;color:#96a38e}
+.product-body[data-lab="memo"] .sidebar-dev-note p{margin:5px 0 0;font-size:10px;line-height:1.55}
+.product-body[data-lab="memo"] .sidebar-dev-note code{color:#5c7058;font:11px monospace}
+.product-body[data-lab="memo"] .sidebar-version{margin-top:12px}
+@media(min-width:701px){.product-body[data-lab="memo"] .product-sidebar{position:sticky;top:42px;align-self:start;height:calc(100vh - 42px);overflow-y:auto}}
+@media(max-width:700px){.product-body[data-lab="memo"] .product-sidebar .sidebar-bottom{width:100%;padding-top:6px}.product-body[data-lab="memo"] .sidebar-dev-note{max-width:260px;margin-left:auto}.product-body[data-lab="memo"] .sidebar-version{display:none}}

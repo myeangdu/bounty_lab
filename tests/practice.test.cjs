@@ -63,6 +63,8 @@ test('memo flags require typed request path and submitted session JSON',()=>{
  assert(!memo.html.includes('id="config-check"'));
  assert(!memo.html.includes('id="role"'));
  assert(memo.html.includes('id="hint-config"'));
+ assert.match(memo.html, /<div class="sidebar-bottom">[^]*?<code>\/debug\/config<\/code>/);
+ assert(!memo.html.includes('practice-corner-hint'));
  assert.equal(memo.get('session-body').value,'{\n  "role": "user"\n}');
  memo.get('session-form').onsubmit({preventDefault(){}});
  assert(memo.get('session-result').textContent.includes('"role": "user"'));
