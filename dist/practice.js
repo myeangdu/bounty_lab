@@ -1,5 +1,5 @@
-const practiceKey = 'bounty-lab-practice-v1';
-const hintKeys = Object.keys(challenges).flatMap(type =>
+const practiceKey = 'bounty-lab-practice-v2:' + activeLab.id;
+const hintKeys = activeTypes.flatMap(type =>
   Array.from({length: ['config', 'idor', 'role'].includes(type) ? 1 : 3}, (_, i) => type + ':' + (i + 1)));
 let practice = {mode: 'learning', elapsedMs: 0, hints: []};
 try {
@@ -30,7 +30,7 @@ function renderPractice() {
   const seconds = Math.floor(practice.elapsedMs / 1000);
   $('practice-time').textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
   $('practice-hints').textContent = practice.hints.length;
-  const complete = reports.length === Object.keys(challenges).length;
+  const complete = activeTypes.every(type => reports.some(r => r.type === type));
   $('practice-toggle').disabled = complete;
   $('practice-toggle').textContent = complete ? '실습 완료' : practiceRunning ? '일시정지' : practice.elapsedMs ? '이어서 시작' : '실습 시작';
 }
@@ -57,10 +57,10 @@ function practiceHint(key) {
 function practiceSnapshot() {
   tickPractice();
   savePractice();
-  return {mode: practice.mode, elapsedMs: practice.elapsedMs, hints: practice.hints.length};
+  return {lab: activeLab.id, mode: practice.mode, elapsedMs: practice.elapsedMs, hints: practice.hints.length};
 }
 function finishPractice() {
-  if (reports.length === Object.keys(challenges).length) practiceRunning = false;
+  if (activeTypes.every(type => reports.some(r => r.type === type))) practiceRunning = false;
   renderPractice();
 }
 $('practice-mode').onchange = () => {

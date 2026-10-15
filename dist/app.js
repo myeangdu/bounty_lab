@@ -8,19 +8,131 @@ Object.assign(challenges,{
 loginSql:{title:'관리자 로그인 · SQL 조건 우회',flag:'FLAG{parameterize_the_login}',reward:300000,lesson:'로그인 쿼리에 입력을 이어 붙이지 말고 매개변수화된 쿼리를 사용해야 합니다.'},
 loginReset:{title:'관리자 로그인 · 재설정 대상 검증',flag:'FLAG{bind_reset_to_the_user}',reward:400000,lesson:'재설정 티켓은 발급받은 계정에 묶고, 서버에서 대상과 만료·사용 여부를 검증해야 합니다.'}
 });
-function isChallengeType(type){return typeof type==='string'&&Object.hasOwn(challenges,type);}
-let reports=[];try{const saved=JSON.parse(localStorage.getItem('bounty-lab-v1')||'[]');if(Array.isArray(saved)){const seen=new Set();reports=saved.filter(r=>r&&isChallengeType(r.type)&&typeof r.date==='string'&&!seen.has(r.type)&&seen.add(r.type));}}catch{}
-const $=id=>document.getElementById(id);const money=value=>value.toLocaleString('ko-KR');
-function update(){ $('balance').textContent=money(reports.reduce((sum,r)=>sum+challenges[r.type].reward,0));$('count').textContent=reports.length;$('progress').style.width=reports.length/Object.keys(challenges).length*100+'%';$('history-count').textContent=reports.length;$('progress-message').textContent=reports.length===Object.keys(challenges).length?'모든 취약점을 찾았어요. 멋진 첫 실습입니다!':reports.length?'좋은 발견이에요. 남은 취약점도 찾아보세요.':'아직 발견하지 못한 버그가 기다리고 있어요.';document.querySelectorAll('[data-done]').forEach(el=>{el.textContent=reports.some(r=>r.type===el.dataset.done)?'제보 완료 ✓':''});if(reports.length){$('history').replaceChildren(...reports.map(r=>{const item=document.createElement('div');item.className='history-entry';const label=document.createElement('span');label.className='approved';label.textContent='승인 완료';const title=document.createElement('strong');title.textContent=challenges[r.type].title;const detail=document.createElement('div');detail.className='between';const date=document.createElement('small');date.textContent=r.date;const reward=document.createElement('span');reward.textContent='+ ₩'+money(challenges[r.type].reward);detail.append(date,reward);item.append(label,title,detail);if(r.practice&&['learning','challenge'].includes(r.practice.mode)&&Number.isSafeInteger(r.practice.elapsedMs)&&r.practice.elapsedMs>=0&&Number.isSafeInteger(r.practice.hints)&&r.practice.hints>=0){const stats=document.createElement('small');stats.textContent=(r.practice.mode==='challenge'?'도전':'학습')+' 모드 · 누적 '+Math.floor(r.practice.elapsedMs/60000)+'분 '+Math.floor(r.practice.elapsedMs/1000)%60+'초 · 힌트 '+r.practice.hints+'개';item.append(stats);}return item;}));}}
-function tab(name){for(const value of ['service','report']){$(value+'-panel').hidden=value!==name;$(value+'-tab').classList.toggle('active',value===name);$(value+'-tab').setAttribute('aria-selected',String(value===name));}}
-$('service-tab').onclick=()=>tab('service');$('report-tab').onclick=()=>tab('report');
-function showResult(id,text,found=false){$(id).textContent=text;$(id).classList.toggle('found',found)}
-function lookup(){const id=$('note-id').value.trim();const notes={'1001':'200 OK · 소유자: 지민 (나)\n이번 주 할 일\n책 읽기, 프로젝트 아이디어 정리, 버그바운티 실습하기.','1002':'200 OK · 소유자: 지민 (나)\n떠오른 아이디어\n사람들에게 도움이 되는 작은 서비스를 만들어 보기.','1003':'200 OK · 소유자: 서연 · 비공개 메모\n다른 사용자의 메모에 접근했어요! 소유자 검증이 빠져 있습니다.\n\n'+challenges.idor.flag+'\n\n이 플래그를 복사해 취약점 제보 탭에 제출하세요.'};showResult('note-result',notes[id]||'404 Not Found · 해당 번호의 메모를 찾을 수 없습니다.',id==='1003')}
-$('request-form').onsubmit=e=>{e.preventDefault();lookup()};document.querySelectorAll('[data-note]').forEach(el=>el.onclick=()=>{$('note-id').value=el.dataset.note;lookup()});
-$('admin-check').onclick=()=>{const admin=$('role').value==='admin';showResult('session-result',admin?'200 OK · 관리자 페이지\n역할 값만 바꾸었는데 관리자 메뉴가 열렸어요.\n\n'+challenges.role.flag:'403 Forbidden · 일반 사용자는 관리자 메뉴에 접근할 수 없습니다.',admin)};
-$('config-check').onclick=()=>showResult('session-result','200 OK · 개발 설정\nenvironment: development\ndebug: true\ninternal_flag: '+challenges.config.flag+'\n\n공개되어서는 안 되는 내부 설정이 노출되었어요.',true);
-document.querySelectorAll('[data-hint]').forEach(el=>el.onclick=()=>{const hint=$('hint-'+el.dataset.hint);if(hint.hidden&&!practiceHint(el.dataset.hint+':1'))return;hint.hidden=!hint.hidden;el.textContent=hint.hidden?'힌트 보기 +':'힌트 닫기 −'});
-function submitReport(type,flag,steps){if(!isChallengeType(type))return{ok:false,message:'취약점 유형을 선택해 주세요.'};if(typeof flag!=='string'||flag.trim()!==challenges[type].flag)return{ok:false,message:'플래그와 취약점 유형이 일치하지 않아요. 발견한 값을 다시 확인해 주세요.'};if(typeof steps!=='string'||steps.trim().length<10)return{ok:false,message:'재현 과정을 공백 제외 앞뒤 정리 후 10자 이상 적어주세요.'};if(reports.some(r=>r.type===type))return{ok:false,message:'이미 보상을 받은 취약점입니다. 다른 취약점을 찾아보세요.'};reports.unshift({type,date:new Date().toLocaleDateString('ko-KR'),practice:practiceSnapshot()});let saved=true;try{localStorage.setItem('bounty-lab-v1',JSON.stringify(reports))}catch{saved=false}update();finishPractice();return{ok:true,message:'제보 승인! 가상 계좌에 ₩'+money(challenges[type].reward)+'이 지급되었습니다. '+challenges[type].lesson+(saved?'':' 현재 브라우저에서 저장을 사용할 수 없어 새로고침 시 기록이 사라질 수 있습니다.')};}
-$('report-form').onsubmit=e=>{e.preventDefault();const result=submitReport($('report-type').value,$('flag').value,$('steps').value);$('report-feedback').textContent=result.message;$('report-feedback').style.color=result.ok?'#5c7738':'#b14c43';if(result.ok){$('flag').value='';$('steps').value=''}};
-$('guide-open').onclick=()=>$('guide').showModal();$('guide-close').onclick=()=>$('guide').close();$('guide-start').onclick=()=>$('guide').close();$('guide').onclick=e=>{if(e.target===$('guide')){const box=$('guide').getBoundingClientRect();if(e.clientX<box.left||e.clientX>box.right||e.clientY<box.top||e.clientY>box.bottom)$('guide').close()}};update();
-if(document.modelContext?.registerTool){try{Promise.resolve(document.modelContext.registerTool({name:'submit_vulnerability_report',title:'취약점 제보 제출',description:'발견한 플래그와 재현 과정을 제출하고 승인된 새 제보에 가상 보상을 지급합니다.',inputSchema:{type:'object',properties:{type:{type:'string',enum:Object.keys(challenges)},flag:{type:'string'},steps:{type:'string',minLength:10}},required:['type','flag','steps'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){const result=submitReport(input?.type,input?.flag,input?.steps);tab('report');$('report-feedback').textContent=result.message;return result;}})).catch(()=>{})}catch{}}
+function isChallengeType(type) {
+  return typeof type === 'string' && Object.hasOwn(challenges, type);
+}
+const $ = id => document.getElementById(id);
+const money = value => value.toLocaleString('ko-KR');
+const reportPrefix = 'bounty-lab-report-v2:';
+let reports = [];
+function validReport(record) {
+  return record && isChallengeType(record.type) && typeof record.date === 'string';
+}
+function loadReports() {
+  const byType = new Map();
+  try {
+    const legacy = JSON.parse(localStorage.getItem('bounty-lab-v1') || '[]');
+    if (Array.isArray(legacy)) legacy.filter(validReport).forEach(r => byType.set(r.type, r));
+  } catch {}
+  {
+    for (const type of Object.keys(challenges)) {
+      try {
+        const record = JSON.parse(localStorage.getItem(reportPrefix + type));
+        if (validReport(record) && record.type === type) byType.set(type, record);
+      } catch {}
+    }
+  }
+  // Keep this window's successful reports if storage is unavailable.
+  reports.filter(validReport).forEach(r => { if (!byType.has(r.type)) byType.set(r.type, r); });
+  reports = [...byType.values()];
+}
+function setText(id, text) { if ($(id)) $(id).textContent = text; }
+function update() {
+  setText('balance', money(reports.reduce((sum, r) => sum + challenges[r.type].reward, 0)));
+  setText('count', reports.length);
+  if ($('progress')) $('progress').style.width = reports.length / Object.keys(challenges).length * 100 + '%';
+  setText('progress-message', reports.length === 8 ? '모든 실습을 완료했어요!' : reports.length ? '좋은 발견이에요. 다음 실습에 도전해 보세요.' : '첫 번째 실습 환경을 열어보세요.');
+  const visibleReports = reports.filter(r => activeTypes.includes(r.type));
+  setText('history-count', visibleReports.length);
+  setText('room-progress', visibleReports.length + ' / ' + activeTypes.length + ' 해결');
+  document.querySelectorAll('[data-done]').forEach(el => {
+    el.textContent = reports.some(r => r.type === el.dataset.done) ? '제보 완료 ✓' : '';
+  });
+  const history = $('history');
+  if (history) {
+    const entries = visibleReports.slice().reverse().map(r => {
+      const item = document.createElement('div'); item.className = 'history-entry';
+      const label = document.createElement('span'); label.className = 'approved'; label.textContent = '승인 완료';
+      const title = document.createElement('strong'); title.textContent = challenges[r.type].title;
+      const detail = document.createElement('div'); detail.className = 'between';
+      const date = document.createElement('small'); date.textContent = r.date;
+      const reward = document.createElement('span'); reward.textContent = '+ ₩' + money(challenges[r.type].reward);
+      detail.append(date, reward); item.append(label, title, detail);
+      const p = r.practice;
+      if (p && ['learning', 'challenge'].includes(p.mode) && Number.isSafeInteger(p.elapsedMs) && p.elapsedMs >= 0 && Number.isSafeInteger(p.hints) && p.hints >= 0) {
+        const stats = document.createElement('small');
+        stats.textContent = (p.mode === 'challenge' ? '도전' : '학습') + ' 모드 · ' + (p.lab ? '이 실습 ' : '누적 ') + Math.floor(p.elapsedMs / 60000) + '분 ' + Math.floor(p.elapsedMs / 1000) % 60 + '초 · 힌트 ' + p.hints + '개';
+        item.append(stats);
+      }
+      return item;
+    });
+    if (!entries.length) {
+      const empty = document.createElement('p'); empty.className = 'empty-history';
+      empty.textContent = activeLab ? '이 실습에서 발견한 플래그를 제보하면 여기에 기록됩니다.' : '실습 환경에서 플래그를 제보하면 여기에 기록됩니다.';
+      entries.push(empty);
+    }
+    history.replaceChildren(...entries);
+  }
+  if (typeof renderCatalogue === 'function') renderCatalogue();
+}
+function tab(name) {
+  if ($('lab-tools') && !$('lab-tools').open) $('lab-tools').showModal();
+  for (const value of ['service', 'report']) {
+    $(value + '-panel').hidden = value !== name;
+    $(value + '-tab').classList.toggle('active', value === name);
+    $(value + '-tab').setAttribute('aria-selected', String(value === name));
+  }
+}
+$('service-tab').onclick = () => tab('service');
+$('report-tab').onclick = () => tab('report');
+function showResult(id, text, found = false) {
+  $(id).textContent = text; $(id).classList.toggle('found', found);
+}
+function submitReport(type, flag, steps) {
+  if (!activeLab || !isChallengeType(type) || !activeTypes.includes(type)) return {ok: false, message: '현재 실습의 취약점 유형을 선택해 주세요.'};
+  if (typeof flag !== 'string' || flag.trim() !== challenges[type].flag) return {ok: false, message: '플래그와 취약점 유형이 일치하지 않아요.'};
+  if (typeof steps !== 'string' || steps.trim().length < 10) return {ok: false, message: '재현 과정을 10자 이상 적어주세요.'};
+  loadReports();
+  if (reports.some(r => r.type === type)) return {ok: false, message: '이미 보상을 받은 취약점입니다.'};
+  const record = {type, date: new Date().toLocaleDateString('ko-KR'), practice: practiceSnapshot()};
+  reports.push(record);
+  let saved = true;
+  try { localStorage.setItem(reportPrefix + type, JSON.stringify(record)); } catch { saved = false; }
+  update(); finishPractice();
+  return {ok: true, message: '제보 승인! ₩' + money(challenges[type].reward) + ' 지급. ' + challenges[type].lesson + (saved ? '' : ' 저장할 수 없어 다른 창에 반영되지 않으며 새로고침 시 기록이 사라질 수 있습니다.')};
+}
+if ($('report-form')) $('report-form').onsubmit = e => {
+  e.preventDefault();
+  const result = submitReport($('report-type').value, $('flag').value, $('steps').value);
+  $('report-feedback').textContent = result.message;
+  $('report-feedback').style.color = result.ok ? '#5c7738' : '#b14c43';
+  if (result.ok) { $('flag').value = ''; $('steps').value = ''; }
+};
+$('guide-open').onclick = () => $('guide').showModal();
+$('guide-close').onclick = () => $('guide').close();
+$('guide-start').onclick = () => $('guide').close();
+$('guide').onclick = e => {
+  if (e.target !== $('guide')) return;
+  const box = $('guide').getBoundingClientRect();
+  if (e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom) $('guide').close();
+};
+function syncReports() {
+  loadReports(); update();
+  if (typeof finishPractice === 'function') finishPractice();
+}
+window.addEventListener('storage', e => {
+  if (e.key === null || e.key === 'bounty-lab-v1' || e.key.startsWith(reportPrefix)) syncReports();
+});
+window.addEventListener('focus', syncReports);
+loadReports(); update();
+if (activeLab && document.modelContext?.registerTool) {
+  try {
+    Promise.resolve(document.modelContext.registerTool({
+      name: 'submit_vulnerability_report', title: '취약점 제보 제출',
+      description: '현재 실습에서 발견한 플래그와 재현 과정을 제출합니다.',
+      inputSchema: {type: 'object', properties: {type: {type: 'string', enum: activeTypes}, flag: {type: 'string'}, steps: {type: 'string', minLength: 10}}, required: ['type', 'flag', 'steps'], additionalProperties: false},
+      annotations: {readOnlyHint: false},
+      execute(input) { const result = submitReport(input?.type, input?.flag, input?.steps); tab('report'); $('report-feedback').textContent = result.message; return result; }
+    })).catch(() => {});
+  } catch {}
+}

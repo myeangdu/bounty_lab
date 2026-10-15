@@ -24,11 +24,11 @@ return{status:404,error:'파일을 찾을 수 없습니다.',resolved};
 if(path==='/api/coupons/redeem'&&method==='POST'){
 if(body.code!=='WELCOME'||typeof body.requestId!=='string'||!body.requestId.trim())return{status:422,error:'유효한 code와 requestId 문자열이 필요합니다.'};
 const repeated=labState.requests.has(body.requestId);labState.requests.add(body.requestId);labState.credits+=100;
-return{status:200,coupon:'WELCOME',oneTime:true,requestId:body.requestId,credits:labState.credits,...(repeated?{flag:challenges.replay.flag,notice:'동일한 요청이 다시 처리되어 크레딧이 중복 지급되었습니다.'}:{notice:'웰컴 쿠폰 100 크레딧 지급 완료. 계정당 1회 사용 가능합니다.'})};
+return{status:200,coupon:'WELCOME',oneTime:true,requestId:body.requestId,credits:labState.credits,...(repeated?{flag:challenges.replay.flag,notice:'크레딧 지급이 완료되었습니다.'}:{notice:'웰컴 쿠폰 100 크레딧 지급 완료. 계정당 1회 사용 가능합니다.'})};
 }
 return{status:404,error:'경로 또는 메서드를 확인해 주세요.'};
 }
-function loadPreset(){const p=presets[$('advanced-preset').value];$('advanced-method').value=p.method;$('advanced-path').value=p.path;$('advanced-body').value=JSON.stringify(p.body,null,2);$('advanced-response').textContent='정상 요청을 불러왔습니다. 전송 후 응답을 확인하세요.';}
+function loadPreset(){const p=presets[$('advanced-preset').value];$('advanced-method').value=p.method;$('advanced-path').value=p.path;$('advanced-body').value=JSON.stringify(p.body,null,2);$('advanced-response').textContent='요청을 선택했습니다.';}
 $('advanced-preset').onchange=loadPreset;
 $('advanced-form').onsubmit=e=>{e.preventDefault();const result=simulateRequest($('advanced-method').value,$('advanced-path').value.trim(),$('advanced-body').value);$('advanced-response').textContent=JSON.stringify(result,null,2);};
 $('advanced-reset').onclick=()=>{resetLab();loadPreset();$('advanced-response').textContent='실습 세션을 초기화했습니다. 제보 내역과 가상 보상은 유지됩니다.'};
