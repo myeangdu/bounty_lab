@@ -20,6 +20,12 @@ test('catalogue and three rooms initialize using only their own actual DOM and s
  const home=boot('index');assert.equal(home.query('[data-launch]').length,3);assert(!home.get('request-form'));assert(!home.get('advanced-form'));assert(!home.get('sql-login'));assert(home.get('report-form'));
  for(const[name,own,other]of [['memo','request-form','advanced-form'],['requests','advanced-form','sql-login'],['auth','sql-login','request-form']]){const a=boot(name);assert(a.get(own));assert(!a.get(other));assert(!a.get('report-form'));assert.equal(a.read('activeLab.id'),name);const launch=home.query('[data-launch="'+name+'"]')[0];assert.equal(launch.attrs.href.split('?')[0],name+'.html');assert.equal(launch.attrs.target,'_blank');assert.equal(launch.attrs.rel,'noopener');assert.equal(launch.onclick,undefined);}
 });
+test('Memo Identity control panel explains both missions beside their own hints',()=>{
+ const a=boot('auth');assert.equal(a.query('.auth-mission').length,2);assert.equal(a.query('[data-done]').length,2);assert.equal(a.query('[data-practice-hint]').length,6);
+ assert(a.html.includes('관리자 비밀번호 없이 로그인하기'));assert(a.html.includes('복구 절차로 관리자 계정에 접근하기'));
+ assert(a.html.includes('Legacy Portal → 팀 포털 로그인'));assert(a.html.includes('Memo Account → 비밀번호 복구'));
+ assert(a.html.includes('관리자 콘솔에서 감사 키(FLAG)를 확인하세요.'));
+});
 test('all hint families are blocked in challenge mode and counted once in learning mode',()=>{
  const memo=boot('memo');memo.get('hint-config').hidden=true;memo.query('[data-hint]')[0].onclick();assert.equal(memo.read('practice.hints.length'),1);memo.mode('challenge');assert(memo.get('hint-config').hidden);assert(memo.query('[data-hint]')[0].hidden);assert.equal(memo.read("practiceHint('idor:1')"),false);memo.mode('learning');memo.read("practiceHint('config:1')");assert.equal(memo.read('practice.hints.length'),1);
  const api=boot('requests');api.mode('challenge');api.query('[data-advanced]')[0].onclick();assert.equal(api.get('advanced-hint-assignment').textContent,'');api.mode('learning');api.query('[data-advanced]')[0].onclick();assert.equal(api.read('practice.hints.length'),1);
