@@ -2,7 +2,7 @@ const challenges={config:{title:'민감한 설정 정보 노출',flag:'FLAG{debu
 Object.assign(challenges,{
 assignment:{title:'프로필 속성 대량 할당',flag:'FLAG{allowlist_every_field}',reward:250000,lesson:'수정 가능한 필드만 허용 목록으로 받아야 하며, 요금제와 권한은 별도로 검증해야 합니다.'},
 traversal:{title:'인코딩된 파일 경로 우회',flag:'FLAG{normalize_before_validate}',reward:300000,lesson:'경로를 디코딩하고 정규화한 뒤 허용된 디렉터리 안에 있는지 검증해야 합니다.'},
-replay:{title:'일회용 쿠폰 재전송',flag:'FLAG{once_means_once}',reward:350000,lesson:'쿠폰 사용 여부를 서버에서 원자적으로 기록하고, 같은 요청의 중복 처리를 막아야 합니다.'}
+negativeTransfer:{title:'크레딧 이체 금액 검증 누락',flag:'FLAG{validate_positive_amount}',reward:350000,lesson:'크레딧 이체 금액이 양의 정수인지 서버에서 검증하고, 잔액 차감과 지급을 하나의 거래로 처리해야 합니다.'}
 });
 Object.assign(challenges,{
 loginSql:{title:'관리자 로그인 · SQL 조건 우회',flag:'FLAG{parameterize_the_login}',reward:300000,lesson:'로그인 쿼리에 입력을 이어 붙이지 말고 매개변수화된 쿼리를 사용해야 합니다.'},

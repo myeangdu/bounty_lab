@@ -72,9 +72,9 @@ if(activeLab.id==='requests') {
   $('profile-save').onsubmit=e=>{e.preventDefault();const r=serviceRequest('PATCH','/api/profile',{displayName:$('profile-name').value});$('profile-feedback').textContent=r.status===200?'프로필을 저장했습니다.':r.error;};
   $('export-data').onclick=()=>{$('export-result').textContent=labState.profile.plan==='pro'?'내보내기 인증키: '+challenges.assignment.flag:'전체 내보내기는 Pro 요금제에서 사용할 수 있습니다.';};
   $('download-welcome').onclick=()=>showFile(serviceRequest('GET','/api/files?path=welcome.txt',{}),true);
-  $('coupon-form').onsubmit=e=>{e.preventDefault();const r=serviceRequest('POST','/api/coupons/redeem',{code:$('coupon-code').value.trim(),requestId:'welcome-001'});$('coupon-feedback').textContent=r.status===200?r.notice+(r.flag?'\n거래 참조: '+r.flag:''):r.error;};
+  $('transfer-form').onsubmit=e=>{e.preventDefault();const r=serviceRequest('POST','/api/credits/transfer',{recipient:$('transfer-recipient').value.trim(),amount:Number($('transfer-amount').value)});$('transfer-feedback').textContent=r.status===200?r.notice:r.error;};
   $('advanced-form').onsubmit=e=>{e.preventDefault();const r=serviceRequest($('advanced-method').value,$('advanced-path').value.trim(),$('advanced-body').value);if(r.file)showFile(r);};
-  const originalReset=$('advanced-reset').onclick;$('advanced-reset').onclick=()=>{originalReset();refreshAccount();for(const id of ['profile-feedback','export-result','coupon-feedback','file-preview'])$(id).textContent='';$('file-preview').hidden=true;};
+  const originalReset=$('advanced-reset').onclick;$('advanced-reset').onclick=()=>{originalReset();refreshAccount();for(const id of ['profile-feedback','export-result','transfer-feedback','file-preview'])$(id).textContent='';$('file-preview').hidden=true;};
   refreshAccount();const file=location.search.match(/(?:\?|&)file=([^&]*)/);if(file)showFile(serviceRequest('GET','/api/files?path='+file[1],{}));
 }
 let authView='account';

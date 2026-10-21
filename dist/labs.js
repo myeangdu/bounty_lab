@@ -21,7 +21,7 @@ const labs = [
     "keys": [
       "assignment",
       "traversal",
-      "replay"
+      "negativeTransfer"
     ],
     "tags": "입력 검증 · 비즈니스 로직",
     "icon": "{ }",
