@@ -94,3 +94,13 @@ test('ordinary account login, recovery and administrator console are distinct',(
  a.get('choose-legacy').onclick();a.get('sql-user').value="admin' -- ";a.get('sql-pass').value='x';a.get('sql-login').onsubmit({preventDefault(){}});assert.equal(a.get('signed-secret').hidden,false);assert(a.get('signed-secret').textContent.includes('FLAG{parameterize_the_login}'));
  a.get('auth-reset').onclick();assert.equal(a.get('signed-in').hidden,true);assert.equal(a.get('signed-secret').textContent,'');
 });
+test('legacy login shows the SQL built from each input and keeps it visible after login',()=>{
+ const a=boot('auth');a.get('choose-legacy').onclick();assert.equal(a.get('sql-query-panel').hidden,false);
+ a.get('sql-user').value='jimin';a.get('sql-user').oninput();a.get('sql-pass').value='memo1234';a.get('sql-pass').oninput();
+ assert.equal(a.get('sql-query').textContent,"SELECT id, username, role\nFROM users\nWHERE username = 'jimin' AND password = 'memo1234';");
+ a.get('sql-user').value="admin' -- ";a.get('sql-user').oninput();a.get('sql-pass').value='x';a.get('sql-pass').oninput();
+ assert(a.get('sql-query').textContent.includes("username = 'admin' -- ' AND password = 'x'"));
+ a.get('sql-login').onsubmit({preventDefault(){}});assert.equal(a.get('sql-query-panel').hidden,false);assert.equal(a.get('signed-in').hidden,false);
+ a.get('logout').onclick();assert(a.get('sql-query').textContent.includes("username = 'admin' -- ' AND password = ''"));
+ a.get('choose-account').onclick();assert.equal(a.get('sql-query-panel').hidden,true);
+});

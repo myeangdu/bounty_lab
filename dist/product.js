@@ -78,8 +78,10 @@ if(activeLab.id==='requests') {
   refreshAccount();const file=location.search.match(/(?:\?|&)file=([^&]*)/);if(file)showFile(serviceRequest('GET','/api/files?path='+file[1],{}));
 }
 let authView='account';
+function renderLegacyQuery() {$('sql-query').textContent=legacyQuery($('sql-user').value,$('sql-pass').value);}
 function switchAuth(view) {
   authView=view;$('auth-account-view').hidden=view!=='account';$('auth-legacy-view').hidden=view!=='legacy';$('signed-in').hidden=true;
+  $('sql-query-panel').hidden=view!=='legacy';if(view==='legacy')renderLegacyQuery();
   $('choose-account').classList.toggle('selected',view==='account');$('choose-legacy').classList.toggle('selected',view==='legacy');
 }
 function renderAuthSession(result,kind) {
@@ -93,7 +95,8 @@ function renderAuthSession(result,kind) {
 }
 if(activeLab.id==='auth') {
   $('choose-account').onclick=()=>switchAuth('account');$('choose-legacy').onclick=()=>switchAuth('legacy');
-  $('sql-login').onsubmit=e=>{e.preventDefault();renderAuthSession(legacyLogin($('sql-user').value.trim(),$('sql-pass').value),'legacy');};
+  $('sql-user').oninput=renderLegacyQuery;$('sql-pass').oninput=renderLegacyQuery;
+  $('sql-login').onsubmit=e=>{e.preventDefault();renderLegacyQuery();renderAuthSession(legacyLogin($('sql-user').value,$('sql-pass').value),'legacy');};
   $('reset-login').onsubmit=e=>{e.preventDefault();renderAuthSession(accountLogin($('reset-user').value.trim(),$('reset-pass').value),'account');};
   $('logout').onclick=()=>{for(const id of ['sql-pass','reset-pass','sql-result','reset-result','signed-secret']){if('value' in $(id))$(id).value='';$(id).textContent='';}switchAuth(authView);};
   const reset=$('auth-reset').onclick;$('auth-reset').onclick=()=>{reset();$('signed-secret').textContent='';switchAuth('account');};

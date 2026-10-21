@@ -1,4 +1,5 @@
 let authState;function resetAuth(){authState={ticket:null,password:null,jiminPassword:'memo1234',serial:0};}resetAuth();
+function legacyQuery(user,password){return "SELECT id, username, role\nFROM users\nWHERE username = '"+user+"' AND password = '"+password+"';";}
 function legacyLogin(user,password){
 if(user==='jimin'&&password==='memo1234')return{ok:true,user:'jimin',message:'로그인되었습니다.'};
 if(/^admin'\s*--(?:\s.*)?$/i.test(user.trim())&&password.length>0)return{ok:true,user:'admin',message:'200 · admin으로 로그인했습니다.\n관리자 콘솔에 오신 것을 환영합니다.\n\n'+challenges.loginSql.flag};
